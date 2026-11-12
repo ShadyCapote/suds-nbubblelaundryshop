@@ -1,0 +1,12 @@
+C:\FDS\Suds'NBubbleLaundryShop\Suds'NBubbleLaundryShop\bin\Debug\Suds'NBubbleLaundryShop.exe.config
+C:\FDS\Suds'NBubbleLaundryShop\Suds'NBubbleLaundryShop\bin\Debug\Suds'NBubbleLaundryShop.exe
+C:\FDS\Suds'NBubbleLaundryShop\Suds'NBubbleLaundryShop\bin\Debug\Suds'NBubbleLaundryShop.pdb
+C:\FDS\Suds'NBubbleLaundryShop\Suds'NBubbleLaundryShop\obj\Debug\Suds'NBubbleLaundryShop.csproj.AssemblyReference.cache
+C:\FDS\Suds'NBubbleLaundryShop\Suds'NBubbleLaundryShop\obj\Debug\Suds_NBubbleLaundryShop.LogInForm.resources
+C:\FDS\Suds'NBubbleLaundryShop\Suds'NBubbleLaundryShop\obj\Debug\Suds_NBubbleLaundryShop.Properties.Resources.resources
+C:\FDS\Suds'NBubbleLaundryShop\Suds'NBubbleLaundryShop\obj\Debug\Suds'NBubbleLaundryShop.csproj.GenerateResource.cache
+C:\FDS\Suds'NBubbleLaundryShop\Suds'NBubbleLaundryShop\obj\Debug\Suds'NBubbleLaundryShop.csproj.CoreCompileInputs.cache
+C:\FDS\Suds'NBubbleLaundryShop\Suds'NBubbleLaundryShop\obj\Debug\Suds'NBubbleLaundryShop.exe
+C:\FDS\Suds'NBubbleLaundryShop\Suds'NBubbleLaundryShop\obj\Debug\Suds'NBubbleLaundryShop.pdb
+C:\FDS\Suds'NBubbleLaundryShop\Suds'NBubbleLaundryShop\obj\Debug\Suds'NBubbleLaundryShop.exe.config
+C:\FDS\Suds'NBubbleLaundryShop\Suds'NBubbleLaundryShop\obj\Debug\Suds_NBubbleLaundryShop.Dashboard.resources
