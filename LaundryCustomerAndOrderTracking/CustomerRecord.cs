@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MySql.Data.MySqlClient;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -19,19 +20,105 @@ namespace LaundryCustomerAndOrderTracking
             InitializeComponent();
         }
 
+        public static MySqlConnection GetConnection()
+        {
+            string connectionString =
+                "Server=localhost;" +
+                 "Port=3306;" +
+                 "Database=personalDB;" +
+                 "Uid=root;" +
+                 "Pwd=;" +
+                 "Allow Zero Datetime=True;";
+
+            MySqlConnection conn = new MySqlConnection(connectionString);
+
+            try
+            {
+                conn.Open();
+            }
+            catch (MySqlException ex)
+            {
+                MessageBox.Show(
+                    "MYSQL Connection Error!\n" + ex.Message,
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+
+                conn.Dispose();
+                throw;
+            }
+
+            return conn;
+        }
+
+        public static DataTable getData(
+   string query,
+   Dictionary<string, object> parameters = null)
+        {
+            DataTable table = new DataTable();
+
+            using (var con = GetConnection())
+            using (var cmd = con.CreateCommand())
+            {
+                cmd.CommandText = query;
+
+                if (parameters != null)
+                {
+                    foreach (var p in parameters)
+                    {
+                        var param = cmd.CreateParameter();
+                        param.ParameterName = p.Key;
+                        param.Value = p.Value ?? DBNull.Value;
+
+                        cmd.Parameters.Add(param);
+                    }
+                }
+
+                using (var reader = cmd.ExecuteReader())
+                {
+                    table.Load(reader);
+                }
+            }
+
+            return table;
+        }
+
+
+        public static void getMaxID()
+        {
+            try
+            {
+                using (MySqlConnection conn = GetConnection())
+                {
+                    MySqlCommand cmd = new MySqlCommand("Select Max(Personal_ID) as maxID from personal_info", conn);
+                    //Execute the command ans get the result
+                    object result = cmd.ExecuteScalar();
+
+                    //Check if the result is not null and display the maximum personal_ID 
+                    Instantiate.recordChecker.MaxID = result != DBNull.Value ? Convert.ToInt32(result) + 1 : 2024001;
+                    conn.Close();
+                }
+            }
+            catch (MySqlException ex)
+            {
+                //handle exception related to MySQL
+                MessageBox.Show("Database Error:" + ex.Message);
+
+            }
+            catch (Exception ex)
+            {
+                //Handle any other exceptions
+                MessageBox.Show("An error occurred:" + ex.Message);
+            }
+        }
         private void btnAdd_Click(object sender, EventArgs e)
         {
-            string name = ShowInput("Enter customer name:", "Add Customer");
-            if (string.IsNullOrWhiteSpace(name)) return;
-
-            string contact = ShowInput("Enter contact number:", "Add Customer");
-            string address = ShowInput("Enter address:", "Add Customer");
-
-            int newId = customerTable.Rows.Count == 0 ? 1 :
-                Convert.ToInt32(customerTable.Compute("MAX(CustomerID)", "")) + 1;
-
-            customerTable.Rows.Add(newId, name, contact, address);
+          NewOrder newOrderForm = new NewOrder();
+            newOrderForm.Show();
+            this.Close();
         }
+
 
         private static string ShowInput(string promt, string title)
         {

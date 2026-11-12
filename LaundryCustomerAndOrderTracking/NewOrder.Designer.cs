@@ -39,7 +39,6 @@
             this.lblTotal = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
             this.btnPay = new System.Windows.Forms.Button();
-            this.txtCustomerID = new System.Windows.Forms.TextBox();
             this.txtContact = new System.Windows.Forms.TextBox();
             this.txtMName = new System.Windows.Forms.TextBox();
             this.txtFName = new System.Windows.Forms.TextBox();
@@ -47,6 +46,9 @@
             this.cmbPricePerKilo = new System.Windows.Forms.ComboBox();
             this.cmbService = new System.Windows.Forms.ComboBox();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.txtWeight = new System.Windows.Forms.TextBox();
+            this.label9 = new System.Windows.Forms.Label();
+            this.lblCustomerID = new System.Windows.Forms.Label();
             this.panel3 = new System.Windows.Forms.Panel();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.btnReports = new System.Windows.Forms.Button();
@@ -128,7 +130,7 @@
             // 
             this.panel1.Controls.Add(this.lblTotal);
             this.panel1.Controls.Add(this.label8);
-            this.panel1.Location = new System.Drawing.Point(46, 282);
+            this.panel1.Location = new System.Drawing.Point(43, 336);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(596, 81);
             this.panel1.TabIndex = 7;
@@ -159,13 +161,6 @@
             this.btnPay.TabIndex = 8;
             this.btnPay.Text = "Pay";
             this.btnPay.UseVisualStyleBackColor = true;
-            // 
-            // txtCustomerID
-            // 
-            this.txtCustomerID.Location = new System.Drawing.Point(132, 52);
-            this.txtCustomerID.Name = "txtCustomerID";
-            this.txtCustomerID.Size = new System.Drawing.Size(263, 26);
-            this.txtCustomerID.TabIndex = 9;
             // 
             // txtContact
             // 
@@ -213,13 +208,15 @@
             // 
             // panel2
             // 
+            this.panel2.Controls.Add(this.txtWeight);
+            this.panel2.Controls.Add(this.label9);
+            this.panel2.Controls.Add(this.lblCustomerID);
             this.panel2.Controls.Add(this.cmbService);
             this.panel2.Controls.Add(this.cmbPricePerKilo);
             this.panel2.Controls.Add(this.txtLName);
             this.panel2.Controls.Add(this.txtFName);
             this.panel2.Controls.Add(this.txtMName);
             this.panel2.Controls.Add(this.txtContact);
-            this.panel2.Controls.Add(this.txtCustomerID);
             this.panel2.Controls.Add(this.btnPay);
             this.panel2.Controls.Add(this.panel1);
             this.panel2.Controls.Add(this.label7);
@@ -233,6 +230,31 @@
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(730, 523);
             this.panel2.TabIndex = 16;
+            // 
+            // txtWeight
+            // 
+            this.txtWeight.Location = new System.Drawing.Point(132, 274);
+            this.txtWeight.Name = "txtWeight";
+            this.txtWeight.Size = new System.Drawing.Size(263, 26);
+            this.txtWeight.TabIndex = 18;
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(25, 277);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(63, 20);
+            this.label9.TabIndex = 17;
+            this.label9.Text = "Weight:";
+            // 
+            // lblCustomerID
+            // 
+            this.lblCustomerID.AutoSize = true;
+            this.lblCustomerID.Location = new System.Drawing.Point(129, 57);
+            this.lblCustomerID.Name = "lblCustomerID";
+            this.lblCustomerID.Size = new System.Drawing.Size(42, 20);
+            this.lblCustomerID.TabIndex = 16;
+            this.lblCustomerID.Text = "label";
             // 
             // panel3
             // 
@@ -274,7 +296,6 @@
             this.btnReports.TabIndex = 5;
             this.btnReports.Text = "Reports";
             this.btnReports.UseVisualStyleBackColor = false;
-            this.btnReports.Click += new System.EventHandler(this.btnReports_Click);
             // 
             // btnPayment
             // 
@@ -285,7 +306,6 @@
             this.btnPayment.TabIndex = 4;
             this.btnPayment.Text = "Payments";
             this.btnPayment.UseVisualStyleBackColor = false;
-            this.btnPayment.Click += new System.EventHandler(this.btnPayment_Click);
             // 
             // btnOrderTracking
             // 
@@ -296,7 +316,6 @@
             this.btnOrderTracking.TabIndex = 3;
             this.btnOrderTracking.Text = "Order Tracking";
             this.btnOrderTracking.UseVisualStyleBackColor = false;
-            this.btnOrderTracking.Click += new System.EventHandler(this.btnOrderTracking_Click);
             // 
             // btnService
             // 
@@ -307,7 +326,6 @@
             this.btnService.TabIndex = 2;
             this.btnService.Text = "Service";
             this.btnService.UseVisualStyleBackColor = false;
-            this.btnService.Click += new System.EventHandler(this.btnService_Click);
             // 
             // btnCustomer
             // 
@@ -318,7 +336,6 @@
             this.btnCustomer.TabIndex = 1;
             this.btnCustomer.Text = "Customer";
             this.btnCustomer.UseVisualStyleBackColor = false;
-            this.btnCustomer.Click += new System.EventHandler(this.btnCustomer_Click);
             // 
             // btnDashboard
             // 
@@ -329,7 +346,6 @@
             this.btnDashboard.TabIndex = 0;
             this.btnDashboard.Text = "Dashboard";
             this.btnDashboard.UseVisualStyleBackColor = false;
-            this.btnDashboard.Click += new System.EventHandler(this.btnDashboard_Click);
             // 
             // NewOrder
             // 
@@ -340,6 +356,7 @@
             this.Controls.Add(this.panel2);
             this.Name = "NewOrder";
             this.Text = "NewOrder";
+            this.Load += new System.EventHandler(this.NewOrder_Load);
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             this.panel2.ResumeLayout(false);
@@ -362,7 +379,7 @@
         private System.Windows.Forms.Panel panel1;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.Button btnPay;
-        private System.Windows.Forms.TextBox txtCustomerID;
+
         private System.Windows.Forms.TextBox txtContact;
         private System.Windows.Forms.TextBox txtMName;
         private System.Windows.Forms.TextBox txtFName;
@@ -379,5 +396,8 @@
         private System.Windows.Forms.Button btnService;
         private System.Windows.Forms.Button btnCustomer;
         private System.Windows.Forms.Button btnDashboard;
+        private System.Windows.Forms.Label lblCustomerID;
+        private System.Windows.Forms.TextBox txtWeight;
+        private System.Windows.Forms.Label label9;
     }
 }
