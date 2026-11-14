@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Windows.Forms;
@@ -8,9 +9,8 @@ namespace LaundryCustomerAndOrderTracking
 {
     public partial class CustomerRecord : Form
     {
-        // One row per order. Customers with no orders yet still show up.
-        // Edit the column names here if your tables are named differently.
-        private const string RecordsSql =
+        // One grid row per order. Customers with no orders yet still show up.
+        private const string SelectSql =
             "SELECT p.personal_id AS `Customer ID`, " +
             "       p.lastname    AS `Last Name`, " +
             "       p.firstname   AS `First Name`, " +
@@ -21,13 +21,13 @@ namespace LaundryCustomerAndOrderTracking
             "       o.total       AS `Total`, " +
             "       o.order_date  AS `Order Date` " +
             "FROM personal_info p " +
-            "LEFT JOIN orders o ON o.personal_id = p.personal_id " +
-            "WHERE p.firstname LIKE @s OR p.middlename LIKE @s OR p.lastname LIKE @s " +
-            "   OR p.contact LIKE @s OR o.service LIKE @s " +
-            "   OR CAST(p.personal_id AS CHAR) LIKE @s " +
-            "ORDER BY p.personal_id DESC, o.order_id DESC";
+            "LEFT JOIN orders o ON o.personal_id = p.personal_id";
+
+        private const string OrderBySql = " ORDER BY p.personal_id DESC, o.order_id DESC";
 
         private TextBox _txtSearch;
+        private System.Windows.Forms.Timer _searchTimer;
+        private string _baseTitle = "";
 
         public CustomerRecord()
         {
@@ -40,44 +40,66 @@ namespace LaundryCustomerAndOrderTracking
         // ------------------------------------------------------------------
         private void SetupForm()
         {
-            _txtSearch = FindAll<TextBox>(this).FirstOrDefault();
+            _baseTitle = Text;
+
+            // The search box is the text box on the same row as the Search button
+            _txtSearch = FindAll<TextBox>(this)
+                .OrderBy(t => Math.Abs((t.Top + t.Height / 2) - (btnSearch.Top + btnSearch.Height / 2)))
+                .FirstOrDefault();
             if (_txtSearch != null)
             {
+                _txtSearch.KeyDown -= SearchBox_KeyDown;
                 _txtSearch.KeyDown += SearchBox_KeyDown;
+                _txtSearch.TextChanged -= SearchBox_TextChanged;
+                _txtSearch.TextChanged += SearchBox_TextChanged;
             }
+
+            // Waits a moment after typing stops, then searches
+            _searchTimer = new System.Windows.Forms.Timer();
+            _searchTimer.Interval = 300;
+            _searchTimer.Tick += SearchTimer_Tick;
 
             foreach (Button b in FindAll<Button>(this))
             {
                 switch (b.Text.Trim().ToLower())
                 {
                     case "search":
-                        b.Click += btnSearch_Click;
+                        Wire(b, btnSearch_Click);
                         break;
                     case "add":
-                        b.Click += btnAdd_Click;
+                    case "add user":
+                        Wire(b, btnAdd_Click);
                         break;
                     case "dashboard":
-                        b.Click += btnDashboard_Click;
+                        Wire(b, btnDashboard_Click);
                         break;
                     case "customer":
-                        b.Click += btnCustomer_Click;
+                        Wire(b, btnCustomer_Click);
                         break;
                     case "service":
-                        b.Click += btnService_Click;
+                        Wire(b, btnService_Click);
                         break;
                     case "order tracking":
-                        b.Click += btnOrderTracking_Click;
+                        Wire(b, btnOrderTracking_Click);
                         break;
                     case "payments":
-                        b.Click += btnPayments_Click;
+                        Wire(b, btnPayments_Click);
                         break;
                     case "reports":
-                        b.Click += btnReports_Click;
+                        Wire(b, btnReports_Click);
                         break;
                 }
             }
 
+            Load -= CustomerRecord_Load;
             Load += CustomerRecord_Load;
+        }
+
+        // "-=" first, so a button never runs twice even if the designer also connected it
+        private static void Wire(Button b, EventHandler handler)
+        {
+            b.Click -= handler;
+            b.Click += handler;
         }
 
         private static List<T> FindAll<T>(Control parent) where T : Control
@@ -95,11 +117,19 @@ namespace LaundryCustomerAndOrderTracking
         }
 
         // ------------------------------------------------------------------
-        // Loads the records into the grid
+        // Search
         // ------------------------------------------------------------------
+
         private void CustomerRecord_Load(object sender, EventArgs e)
         {
+            // Connect the Search button by its name, whatever its text says
+            Wire(btnSearch, btnSearch_Click);
             LoadData();
+
+            if (_txtSearch != null)
+            {
+                _txtSearch.Focus();
+            }
         }
 
         private string CurrentSearch()
@@ -107,17 +137,76 @@ namespace LaundryCustomerAndOrderTracking
             return (_txtSearch == null) ? "" : _txtSearch.Text.Trim();
         }
 
+        // Typing in the box searches by itself after a short pause
+        private void SearchBox_TextChanged(object sender, EventArgs e)
+        {
+            _searchTimer.Stop();
+            _searchTimer.Start();
+        }
+
+        private void SearchTimer_Tick(object sender, EventArgs e)
+        {
+            _searchTimer.Stop();
+            LoadData(CurrentSearch());
+        }
+
+        // The Search button, or pressing Enter in the box, searches right away
+        private void btnSearch_Click(object sender, EventArgs e)
+        {
+            _searchTimer.Stop();
+            LoadData(CurrentSearch());
+        }
+
+        private void SearchBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+                _searchTimer.Stop();
+                LoadData(CurrentSearch());
+            }
+        }
+
+        // Every word you type must match something in the row, in any order.
+        // "slim capote" and "capote slim" both find the same customer.
+        // A word can match a first name, middle name, last name, contact, service or customer ID.
         private void LoadData(string search = "")
         {
             try
             {
-                var parameters = new Dictionary<string, object>
-                {
-                    { "@s", "%" + search + "%" }
-                };
+                var parameters = new Dictionary<string, object>();
+                var conditions = new List<string>();
 
-                dgvCustomers.DataSource = ConnectDB.getData(RecordsSql, parameters);
+                string[] words = search.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                for (int i = 0; i < words.Length; i++)
+                {
+                    string name = "@w" + i;
+                    parameters[name] = "%" + EscapeLike(words[i]) + "%";
+
+                    conditions.Add(
+                        "(p.firstname LIKE " + name +
+                        " OR p.middlename LIKE " + name +
+                        " OR p.lastname LIKE " + name +
+                        " OR p.contact LIKE " + name +
+                        " OR o.service LIKE " + name +
+                        " OR CAST(p.personal_id AS CHAR) LIKE " + name + ")");
+                }
+
+                string sql = SelectSql;
+                if (conditions.Count > 0)
+                {
+                    sql += " WHERE " + string.Join(" AND ", conditions);
+                }
+                sql += OrderBySql;
+
+                DataTable table = ConnectDB.getData(sql, parameters);
+
+                dgvCustomers.AutoGenerateColumns = true;
+                dgvCustomers.DataSource = table;
                 FormatGrid();
+
+                // The window title shows how many rows were found
+                Text = _baseTitle + " - " + table.Rows.Count + " record(s)";
             }
             catch (Exception ex)
             {
@@ -127,6 +216,12 @@ namespace LaundryCustomerAndOrderTracking
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
+        }
+
+        // A typed % or _ is searched as plain text, not as a wildcard
+        private static string EscapeLike(string text)
+        {
+            return text.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
         }
 
         private void FormatGrid()
@@ -152,21 +247,8 @@ namespace LaundryCustomerAndOrderTracking
         }
 
         // ------------------------------------------------------------------
-        // Search and Add buttons
+        // Add button: opens New Order
         // ------------------------------------------------------------------
-        private void btnSearch_Click(object sender, EventArgs e)
-        {
-            LoadData(CurrentSearch());
-        }
-
-        private void SearchBox_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Enter)
-            {
-                e.SuppressKeyPress = true;
-                LoadData(CurrentSearch());
-            }
-        }
 
         private void btnAdd_Click(object sender, EventArgs e)
         {
@@ -188,6 +270,7 @@ namespace LaundryCustomerAndOrderTracking
 
         private void btnService_Click(object sender, EventArgs e)
         {
+            MessageBox.Show("Clicked. Searching for: [" + CurrentSearch() + "]");
             OpenForm("service");
         }
 

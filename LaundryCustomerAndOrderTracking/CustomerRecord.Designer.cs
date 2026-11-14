@@ -81,7 +81,7 @@
             this.btnAdd.Name = "btnAdd";
             this.btnAdd.Size = new System.Drawing.Size(92, 34);
             this.btnAdd.TabIndex = 3;
-            this.btnAdd.Text = "Add";
+            this.btnAdd.Text = "Add User";
             this.btnAdd.UseVisualStyleBackColor = true;
             this.btnAdd.Click += new System.EventHandler(this.btnAdd_Click);
             // 
@@ -147,7 +147,6 @@
             this.btnPayment.TabIndex = 4;
             this.btnPayment.Text = "Payments";
             this.btnPayment.UseVisualStyleBackColor = false;
-          
             // 
             // btnOrderTracking
             // 
@@ -190,7 +189,6 @@
             this.btnDashboard.TabIndex = 0;
             this.btnDashboard.Text = "Dashboard";
             this.btnDashboard.UseVisualStyleBackColor = false;
-
             // 
             // CustomerRecord
             // 

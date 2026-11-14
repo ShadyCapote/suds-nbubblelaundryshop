@@ -536,8 +536,11 @@ namespace LaundryCustomerAndOrderTracking
 
             // "Maria Dela Cruz" is saved as first name "Maria Dela" and last name "Cruz"
             string first;
+            string middle;
             string last;
-            SplitName(name, out first, out last);
+            SplitName(name, out first, out middle, out last);
+
+
 
             try
             {
@@ -545,7 +548,7 @@ namespace LaundryCustomerAndOrderTracking
                 {
                     { "@id", _nextCustomerId },
                     { "@first", first },
-                    { "@middle", "" },
+                    { "@middle", middle },
                     { "@last", last },
                     { "@contact", contact },
                     { "@address", address }
@@ -601,19 +604,27 @@ namespace LaundryCustomerAndOrderTracking
             }
         }
 
-        private static void SplitName(string full, out string first, out string last)
+        private static void SplitName(string full, out string first, out string middle, out string last)
         {
             string[] parts = full.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
             if (parts.Length <= 1)
             {
                 first = full.Trim();
+                middle = "";
                 last = "";
+            }
+            else if (parts.Length == 2)
+            {
+                first = parts[0];
+                middle = "";
+                last = parts[1];
             }
             else
             {
+                first = parts[0];
                 last = parts[parts.Length - 1];
-                first = string.Join(" ", parts.Take(parts.Length - 1));
+                middle = string.Join(" ", parts.Skip(1).Take(parts.Length - 2));
             }
         }
 
