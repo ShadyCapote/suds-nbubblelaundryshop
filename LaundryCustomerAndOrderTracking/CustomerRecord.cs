@@ -1,237 +1,262 @@
-﻿using MySql.Data.MySqlClient;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 using System.Windows.Forms;
-
 
 namespace LaundryCustomerAndOrderTracking
 {
-    public partial class CustomerRecord : Form   
+    public partial class CustomerRecord : Form
     {
-        private DataTable customerTable;
+        // One row per order. Customers with no orders yet still show up.
+        // Edit the column names here if your tables are named differently.
+        private const string RecordsSql =
+            "SELECT p.personal_id AS `Customer ID`, " +
+            "       p.lastname    AS `Last Name`, " +
+            "       p.firstname   AS `First Name`, " +
+            "       p.middlename  AS `Middle Name`, " +
+            "       p.contact     AS `Contact`, " +
+            "       o.service     AS `Service`, " +
+            "       o.weight      AS `Weight (kg)`, " +
+            "       o.total       AS `Total`, " +
+            "       o.order_date  AS `Order Date` " +
+            "FROM personal_info p " +
+            "LEFT JOIN orders o ON o.personal_id = p.personal_id " +
+            "WHERE p.firstname LIKE @s OR p.middlename LIKE @s OR p.lastname LIKE @s " +
+            "   OR p.contact LIKE @s OR o.service LIKE @s " +
+            "   OR CAST(p.personal_id AS CHAR) LIKE @s " +
+            "ORDER BY p.personal_id DESC, o.order_id DESC";
+
+        private TextBox _txtSearch;
+
         public CustomerRecord()
         {
             InitializeComponent();
+            SetupForm();
         }
 
-        public static MySqlConnection GetConnection()
+        // ------------------------------------------------------------------
+        // Finds the search box and connects every button by its text
+        // ------------------------------------------------------------------
+        private void SetupForm()
         {
-            string connectionString =
-                "Server=localhost;" +
-                 "Port=3306;" +
-                 "Database=personalDB;" +
-                 "Uid=root;" +
-                 "Pwd=;" +
-                 "Allow Zero Datetime=True;";
+            _txtSearch = FindAll<TextBox>(this).FirstOrDefault();
+            if (_txtSearch != null)
+            {
+                _txtSearch.KeyDown += SearchBox_KeyDown;
+            }
 
-            MySqlConnection conn = new MySqlConnection(connectionString);
+            foreach (Button b in FindAll<Button>(this))
+            {
+                switch (b.Text.Trim().ToLower())
+                {
+                    case "search":
+                        b.Click += btnSearch_Click;
+                        break;
+                    case "add":
+                        b.Click += btnAdd_Click;
+                        break;
+                    case "dashboard":
+                        b.Click += btnDashboard_Click;
+                        break;
+                    case "customer":
+                        b.Click += btnCustomer_Click;
+                        break;
+                    case "service":
+                        b.Click += btnService_Click;
+                        break;
+                    case "order tracking":
+                        b.Click += btnOrderTracking_Click;
+                        break;
+                    case "payments":
+                        b.Click += btnPayments_Click;
+                        break;
+                    case "reports":
+                        b.Click += btnReports_Click;
+                        break;
+                }
+            }
 
+            Load += CustomerRecord_Load;
+        }
+
+        private static List<T> FindAll<T>(Control parent) where T : Control
+        {
+            var found = new List<T>();
+            foreach (Control c in parent.Controls)
+            {
+                if (c is T)
+                {
+                    found.Add((T)c);
+                }
+                found.AddRange(FindAll<T>(c));
+            }
+            return found;
+        }
+
+        // ------------------------------------------------------------------
+        // Loads the records into the grid
+        // ------------------------------------------------------------------
+        private void CustomerRecord_Load(object sender, EventArgs e)
+        {
+            LoadData();
+        }
+
+        private string CurrentSearch()
+        {
+            return (_txtSearch == null) ? "" : _txtSearch.Text.Trim();
+        }
+
+        private void LoadData(string search = "")
+        {
             try
             {
-                conn.Open();
-            }
-            catch (MySqlException ex)
-            {
-                MessageBox.Show(
-                    "MYSQL Connection Error!\n" + ex.Message,
-                    "Error",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
-
-                conn.Dispose();
-                throw;
-            }
-
-            return conn;
-        }
-
-        public static DataTable getData(
-   string query,
-   Dictionary<string, object> parameters = null)
-        {
-            DataTable table = new DataTable();
-
-            using (var con = GetConnection())
-            using (var cmd = con.CreateCommand())
-            {
-                cmd.CommandText = query;
-
-                if (parameters != null)
+                var parameters = new Dictionary<string, object>
                 {
-                    foreach (var p in parameters)
-                    {
-                        var param = cmd.CreateParameter();
-                        param.ParameterName = p.Key;
-                        param.Value = p.Value ?? DBNull.Value;
+                    { "@s", "%" + search + "%" }
+                };
 
-                        cmd.Parameters.Add(param);
-                    }
-                }
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    table.Load(reader);
-                }
-            }
-
-            return table;
-        }
-
-
-        public static void getMaxID()
-        {
-            try
-            {
-                using (MySqlConnection conn = GetConnection())
-                {
-                    MySqlCommand cmd = new MySqlCommand("Select Max(Personal_ID) as maxID from personal_info", conn);
-                    //Execute the command ans get the result
-                    object result = cmd.ExecuteScalar();
-
-                    //Check if the result is not null and display the maximum personal_ID 
-                    Instantiate.recordChecker.MaxID = result != DBNull.Value ? Convert.ToInt32(result) + 1 : 2024001;
-                    conn.Close();
-                }
-            }
-            catch (MySqlException ex)
-            {
-                //handle exception related to MySQL
-                MessageBox.Show("Database Error:" + ex.Message);
-
+                dgvCustomers.DataSource = ConnectDB.getData(RecordsSql, parameters);
+                FormatGrid();
             }
             catch (Exception ex)
             {
-                //Handle any other exceptions
-                MessageBox.Show("An error occurred:" + ex.Message);
+                MessageBox.Show(
+                    "Could not load the records!\n" + ex.Message,
+                    "Database Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
             }
         }
-        private void btnAdd_Click(object sender, EventArgs e)
+
+        private void FormatGrid()
         {
-          NewOrder newOrderForm = new NewOrder();
-            newOrderForm.Show();
-            this.Close();
+            dgvCustomers.ReadOnly = true;
+            dgvCustomers.AllowUserToAddRows = false;
+            dgvCustomers.AllowUserToDeleteRows = false;
+            dgvCustomers.MultiSelect = false;
+            dgvCustomers.RowHeadersVisible = false;
+            dgvCustomers.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvCustomers.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
+
+            SetFormat("Total", "C2");
+            SetFormat("Order Date", "yyyy-MM-dd HH:mm");
         }
 
-
-        private static string ShowInput(string promt, string title)
+        private void SetFormat(string column, string format)
         {
-            using (Form dialog = new Form())
-            using (Label lbl = new Label())
-            using (TextBox txt = new TextBox())
-            using (Button ok = new Button())
+            if (dgvCustomers.Columns.Contains(column))
             {
-                dialog.Text = title;
-                dialog.FormBorderStyle = FormBorderStyle.FixedDialog;
-                dialog.StartPosition = FormStartPosition.CenterParent;
-                dialog.ClientSize = new Size(360, 130);
-                dialog.MaximizeBox = false;
-                dialog.MinimizeBox = false;
-
-                lbl.Text = promt;
-                lbl.Location = new Point(12, 15);
-                lbl.AutoSize = true;
-
-                txt.Location = new Point(15, 45);
-                txt.Size = new Size(330, 27);
-
-                ok.Text = "OK";
-                ok.DialogResult = DialogResult.OK;
-                ok.Location = new Point(255, 85);
-                ok.Size = new Size(90, 30);
-
-                dialog.Controls.Add(lbl);
-                dialog.Controls.Add(txt);
-                dialog.Controls.Add(ok);
-                dialog.AcceptButton = ok;
-
-                return dialog.ShowDialog() == DialogResult.OK ? txt.Text.Trim() : "";
-
+                dgvCustomers.Columns[column].DefaultCellStyle.Format = format;
             }
         }
 
-        private void CustomerRecord_Load(object sender, EventArgs e)
-        { 
-
-            customerTable = new DataTable();
-        customerTable.Columns.Add("CustomerID", typeof(int));
-            customerTable.Columns.Add("Name", typeof(string));
-            customerTable.Columns.Add("Contact", typeof(string));
-            customerTable.Columns.Add("Address", typeof(string));
-
-            // Sample data. Replace with data from your database.
-            customerTable.Rows.Add(1, "Juan Dela Cruz", "0917-000-0001", "Quezon City");
-            customerTable.Rows.Add(2, "Maria Santos", "0917-000-0002", "Manila");
-
-            dgvCustomers.DataSource = customerTable;
-            this.AcceptButton = btnSearch;
-            
-        }
-
+        // ------------------------------------------------------------------
+        // Search and Add buttons
+        // ------------------------------------------------------------------
         private void btnSearch_Click(object sender, EventArgs e)
         {
-            string keyword = txtSearch.Text.Trim().Replace("'", "''");
-
-            if (string.IsNullOrEmpty(keyword))
-            {
-                customerTable.DefaultView.RowFilter = "";
-                return;
-            }
-
-            customerTable.DefaultView.RowFilter =
-                $"Name LIKE '%{keyword}%' OR Contact LIKE '%{keyword}%'";
-
+            LoadData(CurrentSearch());
         }
 
+        private void SearchBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+                LoadData(CurrentSearch());
+            }
+        }
+
+        private void btnAdd_Click(object sender, EventArgs e)
+        {
+            OpenForm("neworder");
+        }
+
+        // ------------------------------------------------------------------
+        // Sidebar buttons
+        // ------------------------------------------------------------------
         private void btnDashboard_Click(object sender, EventArgs e)
         {
-            Dashboard dashboard = new Dashboard();
-            dashboard.Show();
-            this.Close();
+            OpenForm("dashboard", "form1");
         }
 
-        private void btnDashboard_Click_1(object sender, EventArgs e)
+        private void btnCustomer_Click(object sender, EventArgs e)
         {
-            Dashboard dashboard = new Dashboard();
-            dashboard.Show();
-            this.Close();
+            LoadData(CurrentSearch());   // you are already on this form, so just refresh
         }
 
         private void btnService_Click(object sender, EventArgs e)
         {
-            Service_Pricing service = new Service_Pricing();
-            service.Show();
-            this.Close();
+            OpenForm("service");
         }
 
         private void btnOrderTracking_Click(object sender, EventArgs e)
         {
-            Order_Tracking orderTracking = new Order_Tracking();
-            orderTracking.Show();
-            this.Close();
+            OpenForm("ordertracking", "tracking");
         }
 
-        private void btnPayment_Click(object sender, EventArgs e)
+        private void btnPayments_Click(object sender, EventArgs e)
         {
-            Payment_Record payment = new Payment_Record();
-            payment.Show();
-            this.Close();
+            OpenForm("payment");
         }
 
         private void btnReports_Click(object sender, EventArgs e)
         {
-            Reports reports = new Reports();
-            reports.Show();
-            this.Close();
+            OpenForm("report");
+        }
+
+        // Finds a form in this project by part of its class name, shows it and hides this one.
+        // Closing the new form closes the whole program.
+        private void OpenForm(params string[] keywords)
+        {
+            if (!Visible)
+            {
+                return;   // already navigating, so ignore a double click
+            }
+
+            Type target = null;
+            Type[] types = Assembly.GetExecutingAssembly().GetTypes();
+
+            foreach (string keyword in keywords)
+            {
+                target = types.FirstOrDefault(t =>
+                    typeof(Form).IsAssignableFrom(t) &&
+                    !t.IsAbstract &&
+                    t != GetType() &&
+                    t.Name.Replace("_", "").ToLower().Contains(keyword));
+
+                if (target != null)
+                {
+                    break;
+                }
+            }
+
+            if (target == null)
+            {
+                MessageBox.Show(
+                    "Could not find a form for \"" + keywords[0] + "\".",
+                    "Form Not Found",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                Form next = (Form)Activator.CreateInstance(target);
+                next.FormClosed += (s, ev) => Application.Exit();
+                next.Show();
+                Hide();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Could not open the form!\n" + ex.Message,
+                    "Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
     }
-
-
 }
-

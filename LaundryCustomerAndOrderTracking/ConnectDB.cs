@@ -1,29 +1,32 @@
-﻿using LaundryCustomerAndOrderTracking;
-using MySql.Data.MySqlClient;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using MySql.Data.MySqlClient;
 
-namespace Activity_FinalTerm
+namespace LaundryCustomerAndOrderTracking
 {
-    public class ConnectDB
+    /// <summary>
+    /// Talks to the MySQL database "laundryDB".
+    /// </summary>
+    public static class ConnectDB
     {
+        // Same settings as your old ConnectDB: database laundryDB, user root, empty password.
+        // If you set a MySQL password, type it after Pwd=
+        private const string ConnectionString =
+            "Server=localhost;" +
+            "Port=3306;" +
+            "Database=laundryDB;" +
+            "Uid=root;" +
+            "Pwd=;" +
+            "Allow Zero Datetime=True;";
 
+        /// <summary>
+        /// Your original method: returns an OPEN connection, or shows an error and throws.
+        /// </summary>
         public static MySqlConnection GetConnection()
         {
-            string connectionString =
-                "Server=localhost;" +
-                 "Port=3306;" +
-                 "Database=personalDB;" +
-                 "Uid=root;" +
-                 "Pwd=;" +
-                 "Allow Zero Datetime=True;";
-
-            MySqlConnection conn = new MySqlConnection(connectionString);
+            MySqlConnection conn = new MySqlConnection(ConnectionString);
 
             try
             {
@@ -35,8 +38,7 @@ namespace Activity_FinalTerm
                     "MYSQL Connection Error!\n" + ex.Message,
                     "Error",
                     MessageBoxButtons.OK,
-                    MessageBoxIcon.Error
-                );
+                    MessageBoxIcon.Error);
 
                 conn.Dispose();
                 throw;
@@ -45,105 +47,52 @@ namespace Activity_FinalTerm
             return conn;
         }
 
-
-        public static DataTable getData(
-     string query,
-     Dictionary<string, object> parameters = null)
+        /// <summary>
+        /// Runs a SELECT query and returns the rows.
+        /// </summary>
+        /// <param name="query">SQL with @name placeholders</param>
+        /// <param name="parameters">values for the placeholders, or null if none</param>
+        public static DataTable getData(string query, Dictionary<string, object> parameters = null)
         {
-            DataTable table = new DataTable();
-
-            using (var con = GetConnection())
-            using (var cmd = con.CreateCommand())
+            using (var conn = new MySqlConnection(ConnectionString))
+            using (var cmd = new MySqlCommand(query, conn))
             {
-                cmd.CommandText = query;
+                AddParameters(cmd, parameters);
 
-                if (parameters != null)
+                var table = new DataTable();
+                using (var adapter = new MySqlDataAdapter(cmd))
                 {
-                    foreach (var p in parameters)
-                    {
-                        var param = cmd.CreateParameter();
-                        param.ParameterName = p.Key;
-                        param.Value = p.Value ?? DBNull.Value;
-
-                        cmd.Parameters.Add(param);
-                    }
+                    adapter.Fill(table);   // opens and closes the connection by itself
                 }
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    table.Load(reader);
-                }
-            }
-
-            return table;
-        }
-
-
-        public static void getMaxID()
-        {
-            try
-            {
-                using (MySqlConnection conn = GetConnection())
-                {
-                    MySqlCommand cmd = new MySqlCommand("Select Max(Personal_ID) as maxID from personal_info", conn);
-                    //Execute the command ans get the result
-                    object result = cmd.ExecuteScalar();
-
-                    //Check if the result is not null and display the maximum personal_ID 
-                    Instantiate.recordChecker.MaxID = result != DBNull.Value ? Convert.ToInt32(result) + 1 : 2024001;
-                    conn.Close();
-                }
-            }
-            catch (MySqlException ex)
-            {
-                //handle exception related to MySQL
-                MessageBox.Show("Database Error:" + ex.Message);
-
-            }
-            catch (Exception ex)
-            {
-                //Handle any other exceptions
-                MessageBox.Show("An error occurred:" + ex.Message);
-            }
-        }
-        public static void saveUpdateDeleteData(string query, Dictionary<string, object> parameters)
-        {
-            try
-            {
-                using (MySqlConnection conn = GetConnection())
-                {
-                    MySqlCommand cmd = new MySqlCommand(query, conn);
-                    // Add parameters to the command
-                    foreach (var param in parameters)
-                    {
-                        cmd.Parameters.AddWithValue(param.Key, param.Value);
-                    }
-                    // Execute the command
-                    int rowsAffected = cmd.ExecuteNonQuery();
-                    // Optionally, you can check the number of rows affected
-                    if (rowsAffected > 0)
-                    {
-                        MessageBox.Show("Operation successful!");
-                    }
-                    else
-                    {
-                        MessageBox.Show("No rows affected.");
-                    }
-                }
-            }
-            catch (MySqlException ex)
-            {
-                // Handle exception related to MySQL
-                MessageBox.Show("Database Error: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                // Handle any other exceptions
-                MessageBox.Show("An error occurred: " + ex.Message);
+                return table;
             }
         }
 
+        /// <summary>
+        /// Runs an INSERT, UPDATE or DELETE and returns how many rows changed.
+        /// </summary>
+        public static int executeQuery(string query, Dictionary<string, object> parameters = null)
+        {
+            using (var conn = new MySqlConnection(ConnectionString))
+            using (var cmd = new MySqlCommand(query, conn))
+            {
+                AddParameters(cmd, parameters);
+                conn.Open();
+                return cmd.ExecuteNonQuery();
+            }
+        }
 
+        private static void AddParameters(MySqlCommand cmd, Dictionary<string, object> parameters)
+        {
+            if (parameters == null)
+            {
+                return;
+            }
+
+            foreach (var p in parameters)
+            {
+                cmd.Parameters.AddWithValue(p.Key, p.Value ?? DBNull.Value);
+            }
+        }
     }
 }
-

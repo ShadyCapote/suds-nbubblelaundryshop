@@ -45,7 +45,7 @@
             this.btnLogin.TabIndex = 0;
             this.btnLogin.Text = "Login";
             this.btnLogin.UseVisualStyleBackColor = true;
-            this.btnLogin.Click += new System.EventHandler(this.btnLogin_Click);
+          
             // 
             // txtUsername
             // 
@@ -102,7 +102,7 @@
             this.ClientSize = new System.Drawing.Size(912, 518);
             this.Controls.Add(this.panel1);
             this.Name = "LogIn";
-            this.Text = "LogIn";
+            this.Text = "S";
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             this.ResumeLayout(false);

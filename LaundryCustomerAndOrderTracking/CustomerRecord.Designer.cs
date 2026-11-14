@@ -73,6 +73,7 @@
             this.dgvCustomers.RowTemplate.Height = 28;
             this.dgvCustomers.Size = new System.Drawing.Size(673, 231);
             this.dgvCustomers.TabIndex = 2;
+        
             // 
             // btnAdd
             // 
@@ -146,7 +147,7 @@
             this.btnPayment.TabIndex = 4;
             this.btnPayment.Text = "Payments";
             this.btnPayment.UseVisualStyleBackColor = false;
-            this.btnPayment.Click += new System.EventHandler(this.btnPayment_Click);
+          
             // 
             // btnOrderTracking
             // 
@@ -189,7 +190,7 @@
             this.btnDashboard.TabIndex = 0;
             this.btnDashboard.Text = "Dashboard";
             this.btnDashboard.UseVisualStyleBackColor = false;
-            this.btnDashboard.Click += new System.EventHandler(this.btnDashboard_Click_1);
+
             // 
             // CustomerRecord
             // 

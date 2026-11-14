@@ -51,14 +51,14 @@ namespace LaundryCustomerAndOrderTracking
         private void btnPayment_Click(object sender, EventArgs e)
         {
             Payment_Record payment_Record = new Payment_Record();
-            payment_Record.Show();
+            payment_Record.ShowDialog();
             this.Close();
         }
 
         private void btnReports_Click(object sender, EventArgs e)
         {
             Reports reports = new Reports();    
-            reports.Show();
+            reports.ShowDialog();
             this.Close();
         }
     }
